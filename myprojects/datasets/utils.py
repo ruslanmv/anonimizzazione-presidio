@@ -6,9 +6,14 @@ from presidio_anonymizer import AnonymizerEngine
 from presidio_anonymizer.entities import OperatorConfig
 from presidio_analyzer.nlp_engine import NlpEngineProvider
 from langdetect import detect
+from dotenv import load_dotenv
 import re
+import os
 import findspark
+
 findspark.init()
+load_dotenv()
+
 def compute(source_df):
     models = [{"lang_code": "it", "model_name": "it_core_news_lg"},
               {"lang_code": "en", "model_name": "en_core_web_sm"},
@@ -23,7 +28,7 @@ def compute(source_df):
     
     # Get an existing SparkSession or create a new one if none exists
     spark = SparkSession.builder \
-                        .appName("analyzer") \
+                        .appName(os.environ["SESSION_NAME"]) \
                         .getOrCreate()
     
     # Broadcast the analyzer instance
