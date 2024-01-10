@@ -2,4 +2,3 @@
 data.py
 *.pyc
 .ipynb_checkpoints/data-checkpoint.py
-*.pyc
