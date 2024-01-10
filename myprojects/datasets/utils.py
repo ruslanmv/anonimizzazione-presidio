@@ -55,11 +55,16 @@ def compute(source_df):
             passport_pattern = r'\b[A-Z0-9]{2}[0-9]{6}\b'
             anonymized_text = re.sub(passport_pattern, replace_with, text)
             return anonymized_text
+        def anonymize_large_numbers(text, threshold=1000, replace_with="<ANONYMIZED>"):
+             large_number_pattern = r'\b\d{4,}\b' 
+             anonymized_text = re.sub(large_number_pattern, lambda match: replace_with if int(match.group(0)) > threshold else match.group(0), text) 
+             return anonymized_text         
 
         # Example usage of anonymization functions
         text = anonymize_passport_numbers(text)
         text = anonymize_ndg_number(text)
         text = anonymize_id(text)
+        text = anonymize_large_numbers(text)
         return text
 
     def anonymize_description_multi(description):
