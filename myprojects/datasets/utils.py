@@ -39,6 +39,7 @@ def compute(source_df):
     broadcast_analyzer = spark.sparkContext.broadcast(analyzer)
 
     def anonymize_custom(text):
+
         def anonymize_id(text):
             # Assuming IDs start with a capital letter followed by digits
             id_pattern = r'[A-Z]\d+'
@@ -55,10 +56,12 @@ def compute(source_df):
             passport_pattern = r'\b[A-Z0-9]{2}[0-9]{6}\b'
             anonymized_text = re.sub(passport_pattern, replace_with, text)
             return anonymized_text
+
         def anonymize_large_numbers(text, threshold=1000, replace_with="<ANONYMIZED>"):
-             large_number_pattern = r'\b\d{4,}\b' 
-             anonymized_text = re.sub(large_number_pattern, lambda match: replace_with if int(match.group(0)) > threshold else match.group(0), text) 
-             return anonymized_text         
+            large_number_pattern = r'\b\d{4,}\b'
+            anonymized_text = re.sub(large_number_pattern, lambda match: replace_with if int(
+                match.group(0)) > threshold else match.group(0), text)
+            return anonymized_text
 
         # Example usage of anonymization functions
         text = anonymize_passport_numbers(text)
@@ -67,9 +70,41 @@ def compute(source_df):
         text = anonymize_large_numbers(text)
         return text
 
-    def anonymize_description_multi(description):
+    def anonymize_description_multi(description: str):
+
+        def formatting_string(description):
+            description = description.replace("(", " ( ")
+            description = description.replace(")", " ) ")
+            description = description.replace("[", " [ ")
+            description = description.replace("]", " ] ")
+            description = description.replace("{", " { ")
+            description = description.replace("}", " } ")
+            description = description.replace("<", " < ")
+            description = description.replace(">", " > ")
+            description = description.replace("/", " / ")
+            description = description.replace("\\", " \\ ")
+            description = description.replace(",", " , ")
+            description = description.replace(".", " . ")
+            return description
+
+        def restore_string(formatted_string):
+            formatted_string = formatted_string.replace(" ( ", "(")
+            formatted_string = formatted_string.replace(" ) ", ")")
+            formatted_string = formatted_string.replace(" [ ", "[")
+            formatted_string = formatted_string.replace(" ] ", "]")
+            formatted_string = formatted_string.replace(" { ", "{")
+            formatted_string = formatted_string.replace(" } ", "}")
+            formatted_string = formatted_string.replace(" < ", "<")
+            formatted_string = formatted_string.replace(" > ", ">")
+            formatted_string = formatted_string.replace(" / ", "/")
+            formatted_string = formatted_string.replace(" \\ ", "\\")
+            formatted_string = formatted_string.replace(" , ", ",")
+            formatted_string = formatted_string.replace(" . ", ".")
+            return formatted_string
+
         if description is None:
             return
+
         try:
             language = detect(description)
         except:
@@ -79,14 +114,16 @@ def compute(source_df):
         else:
             input_language = 'en'
         description = anonymize_custom(description)
+        formatted_description = formatting_string(description)
+
         analyzer_results = broadcast_analyzer.value.analyze(
-            text=description, language=input_language)
+            text=formatted_description.lower(), language=input_language)
         anonymizer = AnonymizerEngine()
         operators = {"DEFAULT": OperatorConfig(
             "replace", {"new_value": "<ANONYMIZED>"})}
         anonymized_results = anonymizer.anonymize(
-            text=description, analyzer_results=analyzer_results, operators=operators)
-        return anonymized_results.text
+            text=formatted_description, analyzer_results=analyzer_results, operators=operators)
+        return restore_string(anonymized_results.text)
 
     # Register the UDF
     anonymize_description_multi_udf = udf(
