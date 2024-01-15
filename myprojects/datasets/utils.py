@@ -72,38 +72,25 @@ def compute(source_df):
 
     def anonymize_description_multi(description: str):
 
-        def formatting_string(description):
-            description = description.replace("(", " ( ")
-            description = description.replace(")", " ) ")
-            description = description.replace("[", " [ ")
-            description = description.replace("]", " ] ")
-            description = description.replace("{", " { ")
-            description = description.replace("}", " } ")
-            description = description.replace("<", " < ")
-            description = description.replace(">", " > ")
-            description = description.replace("/", " / ")
-            description = description.replace("\\", " \\ ")
-            description = description.replace(",", " , ")
-            description = description.replace(".", " . ")
-            return description
-
-        def restore_string(formatted_string):
-            formatted_string = formatted_string.replace(" ( ", "(")
-            formatted_string = formatted_string.replace(" ) ", ")")
-            formatted_string = formatted_string.replace(" [ ", "[")
-            formatted_string = formatted_string.replace(" ] ", "]")
-            formatted_string = formatted_string.replace(" { ", "{")
-            formatted_string = formatted_string.replace(" } ", "}")
-            formatted_string = formatted_string.replace(" < ", "<")
-            formatted_string = formatted_string.replace(" > ", ">")
-            formatted_string = formatted_string.replace(" / ", "/")
-            formatted_string = formatted_string.replace(" \\ ", "\\")
-            formatted_string = formatted_string.replace(" , ", ",")
-            formatted_string = formatted_string.replace(" . ", ".")
-            return formatted_string
-
         if description is None:
             return
+
+        restore_list = ["(", ")", "[", "]",
+                        "{", "}", "<", ">", "/", "\\", ",", "."]
+        format_list = [" ( ", " ) ", " [ ", " ] ",
+                       " { ", " } ", " < ", " > ", " / ", " \\ ", " , ", " . "]
+
+        def formatting_string(string_to_format):
+            for original, replacement in zip(restore_list, format_list):
+                string_to_format = string_to_format.replace(
+                    original, replacement)
+            return string_to_format
+
+        def restore_string(string_to_restore):
+            for original, replacement in zip(restore_list, format_list):
+                string_to_restore = string_to_restore.replace(
+                    replacement, original)
+            return string_to_restore
 
         try:
             language = detect(description)
@@ -113,16 +100,19 @@ def compute(source_df):
             input_language = language
         else:
             input_language = 'en'
+
         description = anonymize_custom(description)
         formatted_description = formatting_string(description)
 
         analyzer_results = broadcast_analyzer.value.analyze(
             text=formatted_description.lower(), language=input_language)
+
         anonymizer = AnonymizerEngine()
         operators = {"DEFAULT": OperatorConfig(
             "replace", {"new_value": "<ANONYMIZED>"})}
         anonymized_results = anonymizer.anonymize(
             text=formatted_description, analyzer_results=analyzer_results, operators=operators)
+
         return restore_string(anonymized_results.text)
 
     # Register the UDF
