@@ -82,8 +82,11 @@ def compute(source_df):
 
         def formatting_string(string_to_format):
             for original, replacement in zip(restore_list, format_list):
-                string_to_format = string_to_format.replace(
-                    original, replacement)
+                pattern = r'(?<!\s)' + re.escape(original) + r'(?!\s)'
+
+                string_to_format = re.sub(
+                    pattern, replacement, string_to_format)
+
             return string_to_format
 
         def restore_string(string_to_restore):
