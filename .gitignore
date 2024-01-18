@@ -2,3 +2,6 @@
 data.py
 *.pyc
 .ipynb_checkpoints/data-checkpoint.py
+.conda
+anonym
+.venv

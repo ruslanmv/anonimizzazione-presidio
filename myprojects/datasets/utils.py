@@ -4,28 +4,33 @@ from pyspark.sql.types import StringType
 from presidio_analyzer import AnalyzerEngine
 from presidio_anonymizer import AnonymizerEngine
 from presidio_anonymizer.entities import OperatorConfig
-from presidio_analyzer.nlp_engine import NlpEngineProvider
+from presidio_analyzer.nlp_engine import NlpEngineProvider, StanzaNlpEngine
 from langdetect import detect
 from dotenv import load_dotenv
 import re
 import os
 import findspark
+import stanza
 
 findspark.init()
 load_dotenv()
 
+stanza.download("en")
+stanza.download("de")
+stanza.download("it")
+
 
 def compute(source_df):
-    models = [{"lang_code": "it", "model_name": "it_core_news_lg"},
-              {"lang_code": "en", "model_name": "en_core_web_sm"},
-              {"lang_code": "de", "model_name": "de_core_news_sm"}]
 
-    configuration = {"nlp_engine_name": "spacy", "models": models}
+    configuration = {"nlp_engine_name": "stanza",
+                     "models": [{"lang_code": "en", "model_name": "en"},
+                                {"lang_code": "it", "model_name": "it"},
+                                {"lang_code": "de", "model_name": "de"}]}
 
-    # Configuration of the NLP Engine
     provider = NlpEngineProvider(nlp_configuration=configuration)
-    nlp_engine = provider.create_engine()
-    analyzer = AnalyzerEngine(nlp_engine=nlp_engine,
+    nlp_engine_with_stanza = provider.create_engine()
+
+    analyzer = AnalyzerEngine(nlp_engine=nlp_engine_with_stanza,
                               supported_languages=['it', 'en', 'de'])
 
     # Get an existing SparkSession or create a new one if none exists
